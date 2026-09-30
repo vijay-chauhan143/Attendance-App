@@ -1,7 +1,14 @@
+import Constants from 'expo-constants';
 import { useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import MapView, { Circle, Marker, Region } from 'react-native-maps';
+import { Platform, StyleSheet, View } from 'react-native';
+import MapView, {
+  Circle,
+  Marker,
+  PROVIDER_GOOGLE,
+  Region,
+} from 'react-native-maps';
 
+import { AppText } from '@/components/common/AppText';
 import type { OfficeLocation } from '@/types/officeLocation';
 
 type LocationMapProps = {
@@ -51,10 +58,27 @@ export function LocationMap({
     return null;
   }
 
+  const isGoogleMapsApiKeyConfigured =
+    Constants.expoConfig?.extra?.googleMapsApiKeyConfigured === true;
+
+  if (Platform.OS === 'android' && !isGoogleMapsApiKeyConfigured) {
+    return (
+      <View style={[styles.container, styles.fallback]}>
+        <AppText style={styles.fallbackTitle}>
+          Google Maps API key is not configured.
+        </AppText>
+        <AppText style={styles.fallbackMessage}>
+          Please configure GOOGLE_MAPS_API_KEY to enable the map.
+        </AppText>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         style={styles.map}
         initialRegion={region}
         onMapReady={() => mapRef.current?.animateToRegion(region, 500)}
@@ -84,5 +108,19 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+  fallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#f1f5f9',
+  },
+  fallbackTitle: {
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  fallbackMessage: {
+    textAlign: 'center',
+    color: '#475569',
   },
 });

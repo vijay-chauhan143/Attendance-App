@@ -3,8 +3,11 @@ import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/common/AppText';
+import { Skeleton } from '@/components/common/Skeleton';
 import { getAttendanceRecords } from '@/services/attendanceService';
 import { AttendanceRecord } from '@/types/attendance';
+
+const SKELETON_ITEMS = [0, 1, 2, 3];
 
 export function AttendanceHistoryScreen() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -78,9 +81,20 @@ export function AttendanceHistoryScreen() {
     <View style={styles.container}>
       <AppText preset="title">Attendance History</AppText>
       {isLoading ? (
-        <View style={styles.state}>
-          <AppText>Loading attendance records...</AppText>
-        </View>
+        <FlatList<number>
+          data={SKELETON_ITEMS}
+          keyExtractor={(item) => String(item)}
+          renderItem={() => (
+            <View style={styles.record}>
+              <Skeleton width="48%" />
+              <Skeleton width="36%" />
+              <Skeleton width="28%" />
+              <Skeleton width="74%" />
+              <Skeleton width="32%" />
+            </View>
+          )}
+          contentContainerStyle={styles.skeletonList}
+        />
       ) : error ? (
         <View style={styles.state}>
           <AppText style={styles.error}>{error}</AppText>
@@ -113,6 +127,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  skeletonList: {
+    flexGrow: 1,
   },
   record: {
     paddingVertical: 16,

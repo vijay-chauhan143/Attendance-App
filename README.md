@@ -16,6 +16,12 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+## Android Google Maps API key
+
+Copy `.env.example` to `.env` and replace the placeholder with your Google Maps API key. The `.env` file is ignored by Git. Enable Maps SDK for Android for the key's Google Cloud project.
+
+After setting `GOOGLE_MAPS_API_KEY`, run `npx expo run:android` to generate/build the Android app with the key. This requires the Android development toolchain and uses a development build, not Expo Go.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

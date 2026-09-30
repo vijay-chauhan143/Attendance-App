@@ -10,6 +10,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppButton } from '@/components/common/AppButton';
 import { AppText } from '@/components/common/AppText';
+import { Skeleton } from '@/components/common/Skeleton';
 import { LocationMap } from '@/components/LocationMap';
 import { useOfficeLocation } from '@/contexts/OfficeLocationContext';
 import { useLocation } from '@/hooks/useLocation';
@@ -60,6 +61,11 @@ export function HomeScreen() {
     location.latitude <= 90 &&
     location.longitude >= -180 &&
     location.longitude <= 180;
+  const isInitialLocationLoading =
+    loading &&
+    !hasValidLocation &&
+    permissionStatus !== 'denied' &&
+    error === null;
   const distance = hasValidLocation && location
     ? getDistanceInMeters(
         location.latitude,
@@ -237,57 +243,77 @@ export function HomeScreen() {
             ? 'Denied'
             : 'Checking...'}
       </AppText>
-      <AppText style={styles.locationInfo}>
-        {loading && !hasValidLocation
-          ? 'Getting current location...'
-          : refreshing
-            ? 'Updating location...'
-            : error
-            ? 'Location unavailable'
-            : isTracking
-              ? 'Location tracking active'
-              : hasValidLocation
-                ? 'Location ready; starting tracking...'
-                : 'Location unavailable'}
-      </AppText>
-      {loading && !hasValidLocation ? (
-        <AppText style={styles.locationInfo}>Please wait for a location fix.</AppText>
-      ) : location ? (
-        <View style={styles.coordinates}>
-          <AppText>Current Location:</AppText>
-          <AppText>Latitude: {location.latitude}</AppText>
-          <AppText>Longitude: {location.longitude}</AppText>
-          <AppText>
-            Accuracy: {location.accuracy === null
-              ? 'Unavailable'
-              : `${location.accuracy.toFixed(1)} meters`}
-          </AppText>
+      {isInitialLocationLoading ? (
+        <View style={styles.loadingSkeleton}>
+          <Skeleton height={300} borderRadius={8} style={styles.mapSkeleton} />
+          <View style={styles.skeletonCoordinates}>
+            <Skeleton width="42%" />
+            <Skeleton width="68%" />
+            <Skeleton width="68%" />
+            <Skeleton width="54%" />
+          </View>
+          <View style={styles.skeletonGeofence}>
+            <Skeleton width="64%" />
+            <Skeleton width="64%" />
+            <Skeleton width="48%" />
+            <Skeleton width="58%" />
+          </View>
         </View>
-      ) : null}
+      ) : (
+        <>
+          <AppText style={styles.locationInfo}>
+            {loading && !hasValidLocation
+              ? 'Getting current location...'
+              : refreshing
+                ? 'Updating location...'
+                : error
+                  ? 'Location unavailable'
+                  : isTracking
+                    ? 'Location tracking active'
+                    : hasValidLocation
+                      ? 'Location ready; starting tracking...'
+                      : 'Location unavailable'}
+          </AppText>
+          {loading && !hasValidLocation ? (
+            <AppText style={styles.locationInfo}>Please wait for a location fix.</AppText>
+          ) : location ? (
+            <View style={styles.coordinates}>
+              <AppText>Current Location:</AppText>
+              <AppText>Latitude: {location.latitude}</AppText>
+              <AppText>Longitude: {location.longitude}</AppText>
+              <AppText>
+                Accuracy: {location.accuracy === null
+                  ? 'Unavailable'
+                  : `${location.accuracy.toFixed(1)} meters`}
+              </AppText>
+            </View>
+          ) : null}
+          {canShowGeofence && location ? (
+            <>
+              <LocationMap
+                latitude={location.latitude}
+                longitude={location.longitude}
+                officeLocation={officeLocation}
+              />
+              <View style={styles.geofenceInfo}>
+                <AppText>Office latitude: {officeLocation.latitude}</AppText>
+                <AppText>Office longitude: {officeLocation.longitude}</AppText>
+                <AppText>Geofence radius: {officeLocation.radius} meters</AppText>
+                <AppText>Distance from office: {Math.round(distance ?? 0)} meters</AppText>
+                <AppText>
+                  Geofence status: {isInsideGeofence
+                    ? 'Inside office geofence'
+                    : 'Outside office geofence'}
+                </AppText>
+              </View>
+            </>
+          ) : null}
+        </>
+      )}
       {hasPoorAccuracy && location?.accuracy !== null ? (
         <AppText style={styles.warning}>
           Location accuracy is low (±{Math.round(location.accuracy)} m); check-in may be unreliable.
         </AppText>
-      ) : null}
-      {canShowGeofence && location ? (
-        <>
-          <LocationMap
-            latitude={location.latitude}
-            longitude={location.longitude}
-            officeLocation={officeLocation}
-          />
-          <View style={styles.geofenceInfo}>
-            <AppText>Office latitude: {officeLocation.latitude}</AppText>
-            <AppText>Office longitude: {officeLocation.longitude}</AppText>
-            <AppText>Geofence radius: {officeLocation.radius} meters</AppText>
-            <AppText>Distance from office: {Math.round(distance ?? 0)} meters</AppText>
-            <AppText>
-              Geofence status: {isInsideGeofence
-                ? 'Inside office geofence'
-                : 'Outside office geofence'}
-            </AppText>
-          </View>
-        </>
       ) : null}
       {attendanceStorageError ? (
         <AppText style={styles.error}>
@@ -301,38 +327,47 @@ export function HomeScreen() {
       {officeLocationError ? (
         <AppText style={styles.error}>{officeLocationError}</AppText>
       ) : null}
-      <AppButton
-        title={
-          isSavingCheckIn
-            ? 'Checking In...'
-            : isCheckingAttendance
-              ? 'Checking Attendance...'
-              : refreshing
-                ? 'Updating Location...'
-              : hasCheckedIn
-                ? 'Already Checked In'
-                : isOfficeLocationLoading
-                  ? 'Loading Office Location...'
-                  : officeLocationError
-                    ? 'Office Location Unavailable'
-                    : !hasValidLocation || permissionStatus !== 'granted'
-                  ? 'Location Required'
-                  : hasPoorAccuracy
-                    ? 'Improve Location Accuracy'
-                    : distance !== null && distance > officeLocation.radius
-                      ? 'Outside Office Geofence'
-                      : 'Check In'
-        }
-        onPress={() => void handleCheckIn()}
-        disabled={!canCheckIn}
-        style={styles.checkInButton}
-      />
-      <AppButton
-        title="Office Settings"
-        onPress={() => navigation.navigate('OfficeSettings')}
-        variant="secondary"
-        style={styles.checkInButton}
-      />
+      {isInitialLocationLoading ? (
+        <View style={styles.skeletonButtons}>
+          <Skeleton height={48} borderRadius={12} />
+          <Skeleton height={48} borderRadius={12} />
+        </View>
+      ) : (
+        <>
+          <AppButton
+            title={
+              isSavingCheckIn
+                ? 'Checking In...'
+                : isCheckingAttendance
+                  ? 'Checking Attendance...'
+                  : refreshing
+                    ? 'Updating Location...'
+                    : hasCheckedIn
+                      ? 'Already Checked In'
+                      : isOfficeLocationLoading
+                        ? 'Loading Office Location...'
+                        : officeLocationError
+                          ? 'Office Location Unavailable'
+                          : !hasValidLocation || permissionStatus !== 'granted'
+                            ? 'Location Required'
+                            : hasPoorAccuracy
+                              ? 'Improve Location Accuracy'
+                              : distance !== null && distance > officeLocation.radius
+                                ? 'Outside Office Geofence'
+                                : 'Check In'
+            }
+            onPress={() => void handleCheckIn()}
+            disabled={!canCheckIn}
+            style={styles.checkInButton}
+          />
+          <AppButton
+            title="Office Settings"
+            onPress={() => navigation.navigate('OfficeSettings')}
+            variant="secondary"
+            style={styles.checkInButton}
+          />
+        </>
+      )}
       {/* {error ? <AppText style={styles.error}>{error}</AppText> : null}
       {!loading && error ? (
         <AppButton
@@ -370,6 +405,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 16,
+  },
+  loadingSkeleton: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  mapSkeleton: {
+    marginBottom: 16,
+  },
+  skeletonCoordinates: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  skeletonGeofence: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  skeletonButtons: {
+    width: '100%',
+    gap: 16,
   },
   geofenceInfo: {
     alignItems: 'center',
