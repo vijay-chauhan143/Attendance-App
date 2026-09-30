@@ -14,7 +14,6 @@ A React Native technical assignment built with Expo. The app tracks the user's f
 - Skeleton placeholders during initial location and attendance-history loading.
 - Foreground location permission handling and user-facing permission/GPS error messages.
 - Android map fallback when the Google Maps API key is not configured.
-- Clear attendance history is **not currently implemented**.
 
 ## Tech Stack
 
